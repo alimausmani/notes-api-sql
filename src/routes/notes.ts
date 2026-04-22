@@ -10,7 +10,7 @@ export async function notesRoutes(app: FastifyInstance) {
     }
   }, async () => {
     const result = await pool.query(
-      `SELECT id, user_id, title, content, tags__
+      `SELECT id, user_id, title, content, tags
        FROM notes
        ORDER BY id DESC`
     );
@@ -75,5 +75,47 @@ export async function notesRoutes(app: FastifyInstance) {
 
     return result.rows[0];
   });
+
+  app.put('/notes/:id', {
+    schema: {
+        tags: ['Notes'],
+        params: {
+            type: 'object',
+            required: ['id'],
+            properties: {
+                id: { type: 'number' }
+            }
+        },
+        body: {
+            type: 'object',
+            required: ['title', 'content', 'tags'],
+            properties: {
+                title: { type: 'string' },
+                content: { type: 'string' },
+                tags: {
+                    type: 'array',
+                    items: { type: 'string' }
+                }
+            }
+        }
+    }
+}, async (req: any, reply: any) => {
+    const { id } = req.params;          
+    const { title, content, tags } = req.body;
+
+    const result = await pool.query(
+        `UPDATE notes
+         SET title = $1, content = $2, tags = $3
+         WHERE id = $4
+         RETURNING id`,
+        [title, content, tags, id]
+    );
+
+    if (result.rowCount === 0) {
+        return reply.code(404).send({ message: 'Note not found' });
+    }
+
+    return result.rows[0];
+});
 
 }
