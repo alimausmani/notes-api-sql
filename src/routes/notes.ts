@@ -48,4 +48,32 @@ export async function notesRoutes(app: FastifyInstance) {
     return result.rows[0];
   });
 
+  app.get('/notes/:id', {
+    schema: {
+      tags: ['Notes'],
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'number' }
+        }
+      }
+    }
+  }, async (req: any, reply: any) => {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `SELECT id, user_id, title, content, tags
+       FROM notes
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return reply.code(404).send({ message: 'Note not found' });
+    }
+
+    return result.rows[0];
+  });
+
 }
